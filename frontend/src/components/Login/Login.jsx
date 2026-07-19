@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from '../../config';
 
 const InputField = ({ label, endAdornment, ...props }) => (
     <div className="space-y-2">
@@ -42,7 +43,7 @@ export default function Login() {
         setStatus("loading");
         try {
             if (isSignUp) {
-                const res = await fetch("http://localhost:8000/auth/SignUp", {
+                const res = await fetch(`${API_BASE_URL}/auth/SignUp`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -65,7 +66,7 @@ export default function Login() {
                 localStorage.setItem("username", data.username || "");
                 navigate("/");
             } else {
-                const res = await fetch(`http://localhost:8000/auth/SignIn?username=${encodeURIComponent(handle)}&password=${encodeURIComponent(password)}`, {
+                const res = await fetch(`${API_BASE_URL}/auth/SignIn?username=${encodeURIComponent(handle)}&password=${encodeURIComponent(password)}`, {
                     method: "POST"
                 });
                 const data = await res.json();

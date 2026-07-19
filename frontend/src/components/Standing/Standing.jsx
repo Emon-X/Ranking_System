@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../../config';
 
 export default function Standing() {
     const [userData, setUserData] = useState([]);
@@ -12,8 +13,8 @@ export default function Standing() {
         else setLoading(true);
 
         const url = isRefresh
-            ? 'http://localhost:8000/users/ViewAllUsers_by_Rank?refresh=true'
-            : 'http://localhost:8000/users/ViewAllUsers_by_Rank';
+            ? `${API_BASE_URL}/users/ViewAllUsers_by_Rank?refresh=true`
+            : `${API_BASE_URL}/users/ViewAllUsers_by_Rank`;
 
         fetch(url, {
             headers: {

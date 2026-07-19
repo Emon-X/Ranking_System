@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config';
 
-const API = "http://localhost:8000";
+const API = API_BASE_URL;
 
 const CalendarIcon = () => (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
