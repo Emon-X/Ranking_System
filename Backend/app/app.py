@@ -10,8 +10,8 @@ from fastapi.openapi.utils import get_openapi
 
 
 app = FastAPI(
-    title="Rating System",
-    description="A simple rating system API",
+    title="Ranking System",
+    description="A simple ranking system API",
     version="1.0.0",
 )
 
@@ -50,9 +50,9 @@ def custom_openapi():
         return app.openapi_schema
     
     openapi_schema = get_openapi(
-        title="Blog API",
+        title="Ranking System API",
         version="1.0.0",
-        description="This is a simple Blog API built with FastAPI.",
+        description="This is a simple Ranking System API built with FastAPI.",
         routes=app.routes,
     )
     
@@ -78,4 +78,4 @@ app.openapi = custom_openapi
 
 @app.get("/")
 async def Home_Page():
-    return {"message": "Welcome to the Rating System!"}
+    return {"message": "Welcome to the Ranking System!"}
