@@ -17,20 +17,47 @@ class ParticipantRepository(BaseRepository):
         return self.db.query(Participant).filter(Participant.username == username).first()
 
     def create_participant(self, participant_data: dict):
+        # Prevent overriding auto-increment ID
+        participant_data.pop("id", None)
+        
+        # Convert empty strings to None for handles that have unique constraints
+        for handle in ["codeforces_handle", "atcoder_handle", "codechef_handle", "vjudge_handle"]:
+            if participant_data.get(handle) == "":
+                participant_data[handle] = None
+
         if not participant_data.get("vjudge_handle"):
             participant_data["vjudge_handle"] = participant_data.get("username")
             
         new_participant = Participant(**participant_data)
         
-        existing_user = self.db.query(Participant).filter((Participant.username==new_participant.username)|(Participant.email==new_participant.email)).first()
+        existing_user = self.db.query(Participant).filter(
+            (Participant.username == new_participant.username) | 
+            (Participant.email == new_participant.email) |
+            (Participant.vjudge_handle == new_participant.vjudge_handle)
+        ).first()
+        
         if existing_user:
-            raise ValueError("User with this username or email already exists")
+            if existing_user.username == new_participant.username:
+                raise ValueError("User with this username already exists.")
+            if existing_user.email == new_participant.email:
+                raise ValueError("User with this email already exists.")
+            if existing_user.vjudge_handle == new_participant.vjudge_handle:
+                raise ValueError(f"User with this VJudge username ({new_participant.vjudge_handle}) already exists.")
 
         new_participant.password = Hash_helper.get_password_hash(new_participant.password)
         
         self.db.add(new_participant)
-        self.db.commit()
-        self.db.refresh(new_participant)
+        try:
+            self.db.commit()
+            self.db.refresh(new_participant)
+        except Exception as e:
+            self.db.rollback()
+            err_msg = str(e)
+            if "duplicate key value violates unique constraint" in err_msg:
+                if "pkey" in err_msg:
+                    raise ValueError("Failed to create user: Duplicate ID.")
+                raise ValueError("One or more handles (Codeforces, AtCoder, CodeChef, VJudge) are already taken by another user.")
+            raise ValueError("Failed to create user due to database error.")
     
         return new_participant
        

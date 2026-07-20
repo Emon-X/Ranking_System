@@ -105,29 +105,29 @@ async def fetch_codeforces_solved_count(handle: str) -> int:
     }
     cutoff_timestamp = _utc_cutoff_timestamp()
 
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        response = await client.get("https://codeforces.com/api/user.status", params=params)
-        response.raise_for_status()
-
     try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            response = await client.get("https://codeforces.com/api/user.status", params=params)
+            response.raise_for_status()
+
         payload = response.json()
-    except ValueError as exc:
-        raise RankServiceError("Codeforces returned an invalid submissions payload.") from exc
+        if not isinstance(payload, dict) or payload.get("status") != "OK":
+            return 0
 
-    if not isinstance(payload, dict) or payload.get("status") != "OK":
-        raise RankServiceError("Codeforces returned an unexpected submissions payload.")
+        solved_problems: set[str] = set()
+        for submission in payload.get("result") or []:
+            if not isinstance(submission, dict):
+                continue
+            if submission.get("verdict") != "OK":
+                continue
+            if int(submission.get("creationTimeSeconds") or 0) < cutoff_timestamp:
+                continue
+            solved_problems.add(_submission_problem_key(submission))
 
-    solved_problems: set[str] = set()
-    for submission in payload.get("result") or []:
-        if not isinstance(submission, dict):
-            continue
-        if submission.get("verdict") != "OK":
-            continue
-        if int(submission.get("creationTimeSeconds") or 0) < cutoff_timestamp:
-            continue
-        solved_problems.add(_submission_problem_key(submission))
-
-    return len(solved_problems)
+        return len(solved_problems)
+    except Exception as exc:
+        logger.error(f"Codeforces solved count fetch failed for {handle}: {exc}")
+        return 0
 
 
 async def fetch_atcoder_solved_count(handle: str) -> int:
@@ -141,31 +141,31 @@ async def fetch_atcoder_solved_count(handle: str) -> int:
         "from_second": cutoff_timestamp,
     }
 
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        response = await client.get("https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions", params=params)
-        response.raise_for_status()
-
     try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            response = await client.get("https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions", params=params)
+            response.raise_for_status()
+
         payload = response.json()
-    except ValueError as exc:
-        raise RankServiceError("AtCoder returned an invalid submissions payload.") from exc
+        if not isinstance(payload, list):
+            return 0
 
-    if not isinstance(payload, list):
-        raise RankServiceError("AtCoder returned an unexpected submissions payload.")
+        solved_problems: set[str] = set()
+        for submission in payload:
+            if not isinstance(submission, dict):
+                continue
+            if submission.get("result") != "AC":
+                continue
+            if int(submission.get("epoch_second") or 0) < cutoff_timestamp:
+                continue
+            problem_id = str(submission.get("problem_id") or "").strip()
+            if problem_id:
+                solved_problems.add(problem_id)
 
-    solved_problems: set[str] = set()
-    for submission in payload:
-        if not isinstance(submission, dict):
-            continue
-        if submission.get("result") != "AC":
-            continue
-        if int(submission.get("epoch_second") or 0) < cutoff_timestamp:
-            continue
-        problem_id = str(submission.get("problem_id") or "").strip()
-        if problem_id:
-            solved_problems.add(problem_id)
-
-    return len(solved_problems)
+        return len(solved_problems)
+    except Exception as exc:
+        logger.error(f"AtCoder solved count fetch failed for {handle}: {exc}")
+        return 0
 
 
 async def fetch_codeforces_rating(handle: str) -> float:
@@ -399,17 +399,17 @@ async def check_and_process_finished_contests(db: Any):
         Contest.processed == False
     ).order_by(Contest.scheduled_at.desc()).all()
     
-    # Find the latest finished one
     contest_to_process = None
+    
     for contest in unprocessed:
         end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds)
         if now >= end_time:
             contest_to_process = contest
-            break # Just process the last/latest finished contest!
+            break
             
     if not contest_to_process:
         return
-        
+            
     try:
         logger.info(f"Processing finished contest: {contest_to_process.name} ({contest_to_process.vjudge_url})")
         scraped = await scrape_vjudge_contest(contest_to_process.vjudge_url)
@@ -432,10 +432,22 @@ async def check_and_process_finished_contests(db: Any):
         
         scraped_solves_by_handle = {}
         for c in scraped.contestants:
-            handle = str(c.vjudge_handle or c.contestant or "").strip().lower()
-            if handle:
-                scraped_solves_by_handle[handle] = c.solves
+            display_name = str(c.contestant or "")
+            handles = []
+            if "(" in display_name and display_name.endswith(")"):
+                name_part = display_name[:display_name.find("(")].strip().lower()
+                nickname_part = display_name[display_name.find("(")+1:-1].strip().lower()
+                handles.extend([name_part, nickname_part])
+            else:
+                handles.append(display_name.strip().lower())
                 
+            if c.vjudge_handle:
+                handles.append(str(c.vjudge_handle).strip().lower())
+                
+            for h in handles:
+                if h:
+                    scraped_solves_by_handle[h] = c.solves
+                    
         for p in participants:
             solves = 0
             p_u = str(p.username or "").strip().lower()
@@ -458,4 +470,53 @@ async def check_and_process_finished_contests(db: Any):
         
     await recalculate_all_users_standings(db)
 
+
+async def update_new_user_with_latest_contest(db: Any, new_user: Participant):
+    now = datetime.utcnow()
+    contests = db.query(Contest).filter(
+        Contest.scheduled_at != None
+    ).order_by(Contest.scheduled_at.desc()).all()
     
+    latest_past_contest = None
+    for contest in contests:
+        if contest.scheduled_at:
+            end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds)
+            if now >= end_time:
+                latest_past_contest = contest
+                break
+                
+    if not latest_past_contest or not latest_past_contest.vjudge_url:
+        return
+        
+    try:
+        scraped = await scrape_vjudge_contest(latest_past_contest.vjudge_url)
+        solves_list = [c.solves for c in scraped.contestants]
+        max_solves = max(solves_list) if solves_list else 0
+        
+        solves = 0
+        p_u = str(new_user.username or "").strip().lower()
+        p_vh = str(new_user.vjudge_handle or "").strip().lower()
+        
+        for c in scraped.contestants:
+            display_name = str(c.contestant or "")
+            handles = []
+            if "(" in display_name and display_name.endswith(")"):
+                handles.append(display_name[:display_name.find("(")].strip().lower())
+                handles.append(display_name[display_name.find("(")+1:-1].strip().lower())
+            else:
+                handles.append(display_name.strip().lower())
+                
+            if c.vjudge_handle:
+                handles.append(str(c.vjudge_handle).strip().lower())
+                
+            if (p_vh and p_vh in handles) or (p_u and p_u in handles):
+                solves = c.solves
+                break
+                
+        new_user.weekly_contest_solved_problem = solves
+        new_user.max_solved_problem = max_solves
+        new_user.contest_solved_count = (new_user.contest_solved_count or 0) + solves
+        
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to fetch latest contest for new user: {e}")

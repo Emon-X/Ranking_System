@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 # pyrefly: ignore [missing-import]
 from app.schemas.user import ParticipantWeeklyPointsListResponse, ParticipantWeeklyPointsResponse
+from app.schemas.participant import ParticipantUpdate
 from app.repositories.participant import ParticipantRepository
 from app.services.rank import fetch_participants_weekly_scores, RankServiceError
 from sqlalchemy.orm import Session
@@ -84,3 +85,31 @@ async def view_user(username: str, db: Session = Depends(get_db), current_user=D
             "created_at": participant.created_at.isoformat() if participant.created_at else None,
         }
     }
+
+@router.put("/UpdateUser")
+async def update_user_info(
+    info: ParticipantUpdate, 
+    db: Session = Depends(get_db), 
+    current_user=Depends(get_current_user)
+):
+    from app.schemas.participant import ParticipantUpdate
+    participant = ParticipantRepository(db).get_participant_by_username(current_user.username)
+    if not participant:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    update_data = info.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        if key in ["codeforces_handle", "atcoder_handle", "codechef_handle", "vjudge_handle"] and value == "":
+            value = None
+        setattr(participant, key, value)
+        
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        err_msg = str(e)
+        if "duplicate key value violates unique constraint" in err_msg:
+            raise HTTPException(status_code=400, detail="One or more handles (Codeforces, AtCoder, CodeChef, VJudge) are already taken by another user.")
+        raise HTTPException(status_code=500, detail="Failed to update user due to database error.")
+        
+    return {"message": "User information updated successfully"}

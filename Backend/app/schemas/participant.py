@@ -13,3 +13,12 @@ class Participant(BaseModel):
     codechef_handle: str | None = Field(default=None, description="CodeChef handle of the participant")
     vjudge_handle: str | None = Field(default=None, description="VJudge handle of the participant")
     role : str = Field(default="participant")
+
+
+class ParticipantUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    codeforces_handle: str | None = None
+    atcoder_handle: str | None = None
+    codechef_handle: str | None = None
+    vjudge_handle: str | None = None

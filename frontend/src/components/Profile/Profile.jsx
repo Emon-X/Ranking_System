@@ -24,6 +24,11 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
+
+    const isOwnProfile = currentUsername === user?.username;
+    const isAdminViewing = localStorage.getItem("userRole") === "admin";
 
     useEffect(() => {
         setLoading(true);
@@ -157,17 +162,75 @@ export default function Profile() {
         );
     };
 
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch(`${API}/${isAdminViewing ? 'admin/UpdateUser/' + user.username : 'users/UpdateUser'}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify(editForm),
+            });
+            if (!res.ok) {
+                const d = await res.json();
+                throw new Error(d.detail || "Update failed");
+            }
+            setIsEditing(false);
+            window.location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-ink-950 py-12 px-6 sm:px-10">
             <div className="mx-auto max-w-4xl">
-                <div className="mb-6">
+                <div className="mb-6 flex justify-between items-center">
                     <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-400 hover:text-rank-blue transition">
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                         Back to Standings
                     </Link>
+                    {(isAdminViewing || isOwnProfile) && (
+                        <button onClick={() => {
+                            setEditForm({
+                                name: user.name || "",
+                                email: user.email || "",
+                                codeforces_handle: user.codeforces_handle || "",
+                                atcoder_handle: user.atcoder_handle || "",
+                                codechef_handle: user.codechef_handle || "",
+                                vjudge_handle: user.vjudge_handle || "",
+                            });
+                            setIsEditing(true);
+                        }} className="rounded-lg bg-ink-800 px-3 py-1.5 text-xs font-medium text-ink-200 hover:bg-ink-700">
+                            Edit Profile
+                        </button>
+                    )}
                 </div>
+
+                {isEditing && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setIsEditing(false)}>
+                        <div className="w-full max-w-lg rounded-2xl border border-ink-700 bg-ink-900 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-display text-lg font-semibold text-ink-100">Edit Profile</h3>
+                                <button onClick={() => setIsEditing(false)} className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800">
+                                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" /></svg>
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdate} className="space-y-4">
+                                <div><label className="text-xs text-ink-400">Name</label><input className="w-full rounded bg-ink-900/50 border border-ink-700 p-2 text-ink-100" value={editForm.name} onChange={e=>setEditForm({...editForm, name: e.target.value})} required/></div>
+                                <div><label className="text-xs text-ink-400">Email</label><input type="email" className="w-full rounded bg-ink-900/50 border border-ink-700 p-2 text-ink-100" value={editForm.email} onChange={e=>setEditForm({...editForm, email: e.target.value})} required/></div>
+                                <div><label className="text-xs text-ink-400">Codeforces Handle</label><input className="w-full rounded bg-ink-900/50 border border-ink-700 p-2 text-ink-100" value={editForm.codeforces_handle} onChange={e=>setEditForm({...editForm, codeforces_handle: e.target.value})}/></div>
+                                <div><label className="text-xs text-ink-400">AtCoder Handle</label><input className="w-full rounded bg-ink-900/50 border border-ink-700 p-2 text-ink-100" value={editForm.atcoder_handle} onChange={e=>setEditForm({...editForm, atcoder_handle: e.target.value})}/></div>
+                                <div><label className="text-xs text-ink-400">VJudge Handle</label><input className="w-full rounded bg-ink-900/50 border border-ink-700 p-2 text-ink-100" value={editForm.vjudge_handle} onChange={e=>setEditForm({...editForm, vjudge_handle: e.target.value})}/></div>
+                                <button type="submit" className="w-full rounded-lg bg-rank-blue py-2 text-ink-950 font-bold">Save Changes</button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 {/* Profile Card */}
                 <div className="overflow-hidden rounded-2xl border border-ink-800 bg-ink-900/60 p-6 sm:p-8 backdrop-blur shadow-xl mb-8">
