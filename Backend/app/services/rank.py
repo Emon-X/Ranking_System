@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import asyncio
 from dataclasses import dataclass
@@ -184,22 +185,30 @@ async def fetch_codeforces_rating(handle: str) -> float:
     return 0.0
 
 
+_ATCODER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; RatedBot/1.0; +https://your-domain.example)",
+    "Accept": "application/json",
+}
+
 async def fetch_atcoder_rating(handle: str) -> float:
     handle = _normalize_handle(handle)
     if not handle:
         return 0.0
 
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_ATCODER_HEADERS) as client:
         try:
             response = await client.get(f"https://atcoder.jp/users/{handle}/history/json")
             response.raise_for_status()
             payload = response.json()
-            if isinstance(payload, list) and len(payload) > 0:
+            if isinstance(payload, list) and payload:
+                # last entry থেকে NewRating নিন, কিন্তু IsRated=False হলেও ঠিক আছে কারণ NewRating unchanged থাকে
                 return float(payload[-1].get("NewRating", 0.0))
-        except Exception:
-            pass
+            logger.warning(f"AtCoder history empty for handle={handle}")
+        except httpx.HTTPStatusError as e:
+            logger.error(f"AtCoder rating fetch failed for {handle}: status={e.response.status_code}")
+        except Exception as e:
+            logger.error(f"AtCoder rating fetch failed for {handle}: {e}")
     return 0.0
-
 
 async def fetch_participant_solved_counts(participant: Any) -> ParticipantSolvedCount:
     codeforces_handle = _normalize_handle(getattr(participant, "codeforces_handle", None))
@@ -334,7 +343,6 @@ def build_contest_weekly_score_updates(contests: list[Any], participants: list[A
     return updates
 
 
-import logging
 logger = logging.getLogger(__name__)
 
 async def recalculate_all_users_standings(db: Any):
