@@ -27,7 +27,7 @@ async def create_tables() -> None:
 
 origins = [
     "http://localhost:5173",
-    "https://your-frontend.vercel.app",
+    "https://ranking-system-zeta.vercel.app",
 ]
 
 app.add_middleware(

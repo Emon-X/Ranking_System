@@ -51,3 +51,4 @@ htmlcov/
 
 .agents/
 Backend/.agents/
+.trunk/
