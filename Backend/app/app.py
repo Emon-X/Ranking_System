@@ -7,6 +7,8 @@ from .routers.auth import auth_router
 from .routers.admin import router as admin_router
 from .models import Participant, Contest
 from fastapi.openapi.utils import get_openapi
+from app.routers.internal import router as internal_router
+
 
 
 app = FastAPI(
@@ -42,6 +44,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(contest_router)
 app.include_router(admin_router)
+app.include_router(internal_router)
 
 
 def custom_openapi():

@@ -1,0 +1,23 @@
+name: Sync AtCoder Ratings
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install httpx
+
+      - run: python scripts/sync.py          # ← path ঠিক করা হলো
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          INTERNAL_SYNC_SECRET: ${{ secrets.INTERNAL_SYNC_SECRET }}

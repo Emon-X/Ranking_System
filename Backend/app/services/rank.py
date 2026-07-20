@@ -47,7 +47,7 @@ class ContestWeeklyScoreUpdate:
 	weekly_points: int
 
 
-def _utc_cutoff_timestamp(days: int = 7) -> int:
+def _utc_cutoff_timestamp(days: int = 30) -> int:
     return int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
 
 
@@ -186,8 +186,9 @@ async def fetch_codeforces_rating(handle: str) -> float:
 
 
 _ATCODER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; RatedBot/1.0; +https://your-domain.example)",
-    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://atcoder.jp/",
 }
 
 async def fetch_atcoder_rating(handle: str) -> float:
@@ -195,17 +196,32 @@ async def fetch_atcoder_rating(handle: str) -> float:
     if not handle:
         return 0.0
 
+    url = f"https://atcoder.jp/users/{handle}/history/json"
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_ATCODER_HEADERS) as client:
         try:
-            response = await client.get(f"https://atcoder.jp/users/{handle}/history/json")
+            response = await client.get(url)
+            # আগে raw status + snippet log করুন, তারপর raise
+            logger.info(f"AtCoder rating fetch {handle}: status={response.status_code}")
             response.raise_for_status()
+
+            content_type = response.headers.get("content-type", "")
+            if "json" not in content_type:
+                # AtCoder bot-check বা Cloudflare HTML page ফেরত দিলে এটা ধরা পড়বে
+                logger.error(
+                    f"AtCoder returned non-JSON for {handle}: "
+                    f"content-type={content_type}, body[:200]={response.text[:200]!r}"
+                )
+                return 0.0
+
             payload = response.json()
             if isinstance(payload, list) and payload:
-                # last entry থেকে NewRating নিন, কিন্তু IsRated=False হলেও ঠিক আছে কারণ NewRating unchanged থাকে
                 return float(payload[-1].get("NewRating", 0.0))
             logger.warning(f"AtCoder history empty for handle={handle}")
         except httpx.HTTPStatusError as e:
-            logger.error(f"AtCoder rating fetch failed for {handle}: status={e.response.status_code}")
+            logger.error(
+                f"AtCoder rating fetch failed for {handle}: "
+                f"status={e.response.status_code}, body[:200]={e.response.text[:200]!r}"
+            )
         except Exception as e:
             logger.error(f"AtCoder rating fetch failed for {handle}: {e}")
     return 0.0
