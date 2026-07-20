@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { API_BASE_URL } from '../../config';
 
 const API = API_BASE_URL;
@@ -123,10 +124,10 @@ function UsersSection({ users, onRefresh }) {
                         {filtered.map(u => (
                             <tr key={u.username} className="transition-colors hover:bg-ink-800/30">
                                 <td className="px-5 py-3">
-                                    <a href={`/profile/${u.username}`} className="hover:underline">
+                                    <Link to={`/profile/${u.username}`} className="hover:underline">
                                         <div className="font-medium text-ink-100">{u.name}</div>
                                         <div className="text-xs text-ink-500">@{u.username}</div>
-                                    </a>
+                                    </Link>
                                 </td>
                                 <td className="px-5 py-3 hidden md:table-cell font-mono text-xs">{u.email}</td>
                                 <td className="px-5 py-3 hidden lg:table-cell">
@@ -139,9 +140,9 @@ function UsersSection({ users, onRefresh }) {
                                     <Badge color={u.role === "admin" ? "green" : "blue"}>{u.role}</Badge>
                                 </td>
                                 <td className="px-5 py-3 text-right">
-                                    <a href={`/profile/${u.username}`} className="mr-3 rounded-lg px-3 py-1 text-xs font-medium text-ink-300 transition hover:bg-ink-800 hover:text-ink-100">
+                                    <Link to={`/profile/${u.username}`} className="mr-3 rounded-lg px-3 py-1 text-xs font-medium text-ink-300 transition hover:bg-ink-800 hover:text-ink-100">
                                         Edit
-                                    </a>
+                                    </Link>
                                     <button
                                         onClick={() => setConfirm(u.username)}
                                         className="rounded-lg px-3 py-1 text-xs font-medium text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
