@@ -66,7 +66,7 @@ def custom_openapi():
     }
     
     for path, methods in openapi_schema.get("paths", {}).items():
-        if "/auth" not in path and path!="/":
+        if "/auth" not in path and path!="/" and path!="/health":
             for method in methods.values():
                 if isinstance(method,dict):
                     method["security"] = [{"Bearer": []}]
@@ -79,3 +79,7 @@ app.openapi = custom_openapi
 @app.get("/")
 async def Home_Page():
     return {"message": "Welcome to the Ranking System!"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
