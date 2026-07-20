@@ -7,7 +7,7 @@ const NAV_LINKS = [
     { label: "Standings", href: "standing" },
     { label: "Contests", href: "contest" },
     { label: "Profile", href: "profile" },
-    { label: "Docs", href: "https://youkn0wwho.academy/topic-list" },
+    { label: "Resources", href: "https://youkn0wwho.academy/topic-list" },
 ];
 
 export default function Header() {
