@@ -29,7 +29,7 @@ async def login(username: str, password: str, db: Session = Depends(get_db)):
 async def signup(info : Participant,db : Session = Depends(get_db)):
     try:
         user = ParticipantRepository(db).create_participant(info.model_dump())
-        recalculate_all_users_standings(db)
+        await recalculate_all_users_standings(db)
         token = AuthHelper.encode(user.username, user.email)
         return {
             "token": token,
