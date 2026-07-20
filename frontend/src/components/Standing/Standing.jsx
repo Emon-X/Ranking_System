@@ -52,7 +52,7 @@ export default function Standing() {
                         <h1 className="font-display text-3xl font-semibold text-ink-100">ACM Lab</h1>
                         <p className="mt-2 text-ink-400">CSE, Mawlana Bhashani Science and Technology University</p>
                     </div>
-                    {<button
+                    {/* <button
                         onClick={() => fetchStandings(true)}
                         disabled={refreshing || loading}
                         className="inline-flex items-center gap-2 rounded-lg bg-rank-blue/15 border border-rank-blue/30 hover:bg-rank-blue/20 disabled:opacity-50 px-4 py-2 text-xs font-semibold text-rank-blue transition"
@@ -73,7 +73,7 @@ export default function Standing() {
                                 Recalculate Standings
                             </>
                         )}
-                    </button>}
+                    {/* </button> */}
                 </div>
 
                 {loading ? (
