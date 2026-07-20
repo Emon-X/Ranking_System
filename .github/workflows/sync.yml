@@ -15,9 +15,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install httpx
+      - run: pip install -r Backend/scripts/requirements.txt
 
-      - run: python scripts/sync.py          # ← path ঠিক করা হলো
+      - run: python Backend/scripts/sync.py
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
           INTERNAL_SYNC_SECRET: ${{ secrets.INTERNAL_SYNC_SECRET }}
