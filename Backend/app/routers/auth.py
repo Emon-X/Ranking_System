@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.repositories.participant import ParticipantRepository
 from app.core.security import AuthHelper
+from app.services.rank import recalculate_all_users_standings
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -28,6 +29,7 @@ async def login(username: str, password: str, db: Session = Depends(get_db)):
 async def signup(info : Participant,db : Session = Depends(get_db)):
     try:
         user = ParticipantRepository(db).create_participant(info.model_dump())
+        recalculate_all_users_standings(db)
         token = AuthHelper.encode(user.username, user.email)
         return {
             "token": token,
