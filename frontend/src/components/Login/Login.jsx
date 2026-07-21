@@ -103,19 +103,19 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-background">
-      
+
       {/* Left Decorative Section - Only visible on md+ */}
-      <div className="hidden md:flex md:w-1/2 lg:w-3/5 relative overflow-hidden bg-muted/20 border-r flex-col justify-between p-12">
+      <div className="hidden md:flex md:w-1/2 lg:w-1/2 relative overflow-hidden bg-muted/20 border-r flex-col justify-between p-12">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] z-0"></div>
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-success/20 blur-[120px] pointer-events-none" />
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-inner">
               <Terminal className="h-6 w-6 text-primary" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">ACM Lab System</span>
+            <span className="text-2xl font-bold tracking-tight">Ranking System</span>
           </div>
 
           <div className="max-w-md mt-20">
@@ -147,7 +147,7 @@ export default function Login() {
       {/* Right Form Section */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20 md:hidden z-0" />
-        
+
         <Card className="w-full max-w-[440px] z-10 border-border/50 shadow-2xl bg-card/80 backdrop-blur-xl">
           <CardHeader className="space-y-3 pb-6">
             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 mb-2 md:hidden">
@@ -158,38 +158,38 @@ export default function Login() {
             </CardTitle>
             <CardDescription className="text-base">
               {isSignUp ? "Already have an account?" : "New to the platform?"}{" "}
-              <button 
-                type="button" 
-                onClick={() => { setIsSignUp(!isSignUp); setError(""); setStatus("idle"); }} 
+              <button
+                type="button"
+                onClick={() => { setIsSignUp(!isSignUp); setError(""); setStatus("idle"); }}
                 className="font-medium text-primary hover:underline hover:text-primary/80 transition-colors"
               >
                 {isSignUp ? "Sign in instead" : "Create an account"}
               </button>
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-              
+
               <AnimatePresence mode="popLayout">
                 {isSignUp && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }} 
-                    animate={{ opacity: 1, height: "auto" }} 
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                     className="space-y-5 overflow-hidden"
                   >
                     <InputField label="Full Name" id="name" icon={User} value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" />
                     <InputField label="Email Address" id="email" type="email" icon={Mail} value={email} onChange={e => setEmail(e.target.value)} placeholder="john@example.com" />
-                    
+
                     <div className="pt-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
                         <Layers className="h-3 w-3" /> Linked Accounts
                       </p>
                       <div className="grid grid-cols-2 gap-3">
-                         <InputField label="Codeforces" id="cf" icon={Code} value={cfHandle} onChange={e => setCfHandle(e.target.value)} placeholder="Handle" />
-                         <InputField label="AtCoder" id="ac" icon={Code} value={acHandle} onChange={e => setAcHandle(e.target.value)} placeholder="Handle" />
+                        <InputField label="Codeforces" id="cf" icon={Code} value={cfHandle} onChange={e => setCfHandle(e.target.value)} placeholder="Handle" />
+                        <InputField label="AtCoder" id="ac" icon={Code} value={acHandle} onChange={e => setAcHandle(e.target.value)} placeholder="Handle" />
                       </div>
                     </div>
                   </motion.div>
@@ -197,23 +197,23 @@ export default function Login() {
               </AnimatePresence>
 
               <div className="space-y-5">
-                <InputField 
-                  label="VJudge Username" 
-                  id="handle" 
-                  icon={Terminal} 
-                  value={handle} 
-                  onChange={e => setHandle(e.target.value)} 
-                  placeholder={isSignUp ? "Your primary username" : "Enter your handle"} 
+                <InputField
+                  label="VJudge Username"
+                  id="handle"
+                  icon={Terminal}
+                  value={handle}
+                  onChange={e => setHandle(e.target.value)}
+                  placeholder={isSignUp ? "Your primary username" : "Enter your handle"}
                 />
-                
-                <InputField 
-                  label="Password" 
-                  id="password" 
-                  type={showPassword ? "text" : "password"} 
-                  icon={Lock} 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  placeholder="••••••••" 
+
+                <InputField
+                  label="Password"
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  icon={Lock}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   endAdornment={
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground hover:text-foreground transition-colors p-1" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -224,9 +224,9 @@ export default function Login() {
 
               <AnimatePresence>
                 {status === "error" && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     className="p-3 text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-md"
                   >
@@ -235,9 +235,9 @@ export default function Login() {
                 )}
               </AnimatePresence>
 
-              <Button 
-                type="submit" 
-                className="w-full font-semibold h-11 text-base mt-2" 
+              <Button
+                type="submit"
+                className="w-full font-semibold h-11 text-base mt-2"
                 disabled={status === "loading"}
               >
                 {status === "loading" ? (

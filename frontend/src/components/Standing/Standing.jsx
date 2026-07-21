@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Trophy, Medal, Crown, TrendingUp, Users, Activity } from 'lucide-react';
+import { Search, Trophy, Medal, Crown, TrendingUp, Users, Activity, Download } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
+import { Button } from '../ui/button';
 export default function Standing() {
   const [userData, setUserData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,33 @@ export default function Standing() {
 
   const topThree = filteredData.slice(0, 3);
   const restUsers = filteredData.slice(3);
+
+  const downloadTop5 = () => {
+    const top5 = userData.slice(0, 5);
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Rank,Username,Name,Points,CF Rating,AtCoder Rating,30D Solved\n";
+    
+    top5.forEach((user, index) => {
+      const row = [
+        index + 1,
+        user.username,
+        user.name || "N/A",
+        user.weekly_points || 0,
+        user.codeforces_rating || 0,
+        user.atcoder_rating || 0,
+        user.total_solved_last_7_days || 0
+      ].join(",");
+      csvContent += row + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "top_5_standings.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="min-h-screen bg-background py-10 px-4 sm:px-8">
@@ -115,7 +143,7 @@ export default function Standing() {
             {/* Podium for Top 3 */}
             {topThree.length > 0 && (
               <section className="py-8">
-                <div className="flex flex-col sm:flex-row justify-center items-end gap-6 sm:gap-4 h-[300px]">
+                <div className="flex flex-col sm:flex-row justify-center items-center sm:items-end gap-8 sm:gap-4 h-auto sm:h-[300px]">
                   {/* Rank 2 - Silver */}
                   {topThree[1] && (
                     <motion.div 
@@ -190,14 +218,19 @@ export default function Standing() {
                 <h3 className="font-semibold text-lg flex items-center gap-2">
                   <Trophy className="h-5 w-5 text-primary" /> Global Ranking
                 </h3>
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search by username..." 
-                    className="pl-9 bg-background/50 border-border/50" 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                  <Button variant="outline" size="sm" onClick={downloadTop5} className="w-full sm:w-auto font-medium">
+                    <Download className="h-4 w-4 mr-2" /> Top 5 CSV
+                  </Button>
+                  <div className="relative w-full sm:w-72">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search by username..." 
+                      className="pl-9 bg-background/50 border-border/50" 
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -209,7 +242,7 @@ export default function Standing() {
                       <th className="px-6 py-4">Points</th>
                       <th className="px-6 py-4 hidden md:table-cell">CF Rating</th>
                       <th className="px-6 py-4 hidden md:table-cell">AC Rating</th>
-                      <th className="px-6 py-4 text-right">7D Solved</th>
+                      <th className="px-6 py-4 text-right">30D Solved</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">

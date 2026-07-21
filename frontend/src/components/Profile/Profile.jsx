@@ -121,7 +121,7 @@ export default function Profile() {
   const renderChart = () => {
     if (!positionHistory.length) {
       return (
-        <Card className="h-full flex items-center justify-center bg-muted/20 border-dashed">
+        <Card className="min-h-[250px] flex items-center justify-center bg-muted/20 border-dashed">
           <p className="text-muted-foreground text-sm italic py-10">No weekly position history recorded yet.</p>
         </Card>
       );
@@ -314,7 +314,7 @@ export default function Profile() {
                 <CardContent className="p-4 sm:p-6 text-center">
                   <Code2 className="h-6 w-6 mx-auto mb-2 text-accent" />
                   <p className="text-2xl font-bold font-mono">{user.total_solved_last_7_days || 0}</p>
-                  <p className="text-xs text-muted-foreground uppercase mt-1">7D Solves</p>
+                  <p className="text-xs text-muted-foreground uppercase mt-1">30D Solves</p>
                 </CardContent>
               </Card>
               <Card className="bg-warning/5 border-warning/20 hover:bg-warning/10 transition-colors">
@@ -329,7 +329,7 @@ export default function Profile() {
             {renderChart()}
 
             <Card className="bg-card/50 backdrop-blur">
-              <CardHeader className="pb-3 border-b border-border/50 mb-3"><CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2"><BarChart3 className="h-4 w-4"/> Problem Solving Breakdown (7 Days)</CardTitle></CardHeader>
+              <CardHeader className="pb-3 border-b border-border/50 mb-3"><CardTitle className="text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2"><BarChart3 className="h-4 w-4"/> Problem Solving Breakdown (30 Days)</CardTitle></CardHeader>
               <CardContent>
                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ export default function Profile() {
                         <span className="font-mono text-sm font-semibold">{user.atcoder_solved_last_7_days || 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">VJudge</span>
+                        <span className="text-sm font-medium">VJudge (Last Contest)</span>
                         <div className="flex-1 mx-4 h-2 bg-muted rounded-full overflow-hidden">
                            <div className="h-full bg-accent" style={{ width: `${Math.min(((user.weekly_contest_solved_problem || 0) / Math.max(1, user.total_solved_last_7_days)) * 100, 100)}%` }} />
                         </div>
