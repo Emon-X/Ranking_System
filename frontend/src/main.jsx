@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider, Navigate } from 'react-router-dom'
+import { ThemeProvider } from './components/ThemeProvider.jsx'
 import Layout from './Layout.jsx'
 import Login from './components/Login/Login.jsx'
 import Standing from './components/Standing/Standing.jsx'
@@ -45,6 +46,8 @@ const router = createBrowserRouter(
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <RouterProvider router={router} />
+    </ThemeProvider>
   </StrictMode>,
 )

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
@@ -9,7 +9,7 @@ from app.services.vjudge import VJudgeScrapeError, scrape_vjudge_contests
 from app.repositories.participant import ParticipantRepository
 from app.repositories.contest import ContestRepository
 from app.services.rank import build_contest_weekly_score_updates
-from app.database.db import get_db
+from app.database.db import get_db, session_local
 from app.core.dependencis import get_current_user
 
 
@@ -18,11 +18,22 @@ router = APIRouter(prefix="/contests", tags=["contests"])
 
 from datetime import timedelta
 from app.services.rank import check_and_process_finished_contests
+import asyncio
+
+def run_process_contests_task():
+    async def _async_task():
+        db = session_local()
+        try:
+            await check_and_process_finished_contests(db)
+        finally:
+            db.close()
+    
+    asyncio.run(_async_task())
 
 @router.get("/list", response_model=ContestListResponse)
-async def list_contests(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+async def list_contests(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Return all stored contests; frontend splits upcoming, running vs past."""
-    await check_and_process_finished_contests(db)
+    background_tasks.add_task(run_process_contests_task)
     
     contests = ContestRepository(db).get_all()
     now = datetime.utcnow()

@@ -1,148 +1,197 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { Search, Menu, X, Trophy, Swords, User, BookOpen, ShieldCheck, LogOut, Bell } from "lucide-react";
+import { ThemeToggle } from "../ThemeToggle";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 const isAdmin = () => localStorage.getItem('userRole') === 'admin';
 
 const NAV_LINKS = [
-    { label: "Standings", href: "standing" },
-    { label: "Contests", href: "contest" },
-    { label: "Profile", href: "profile" },
-    { label: "Resources", href: "https://youkn0wwho.academy/topic-list" },
+  { label: "Standings", href: "standing", icon: Trophy },
+  { label: "Contests", href: "contest", icon: Swords },
+  { label: "Profile", href: "profile", icon: User },
+  { label: "Resources", href: "https://youkn0wwho.academy/topic-list", icon: BookOpen },
 ];
 
 export default function Header() {
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [searchVal, setSearchVal] = useState("");
-    const navigate = useNavigate();
-    
-    const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        window.location.href = '/login';
-    };
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchVal, setSearchVal] = useState("");
+  const navigate = useNavigate();
 
-    const handleSearchSubmit = (e) => {
-        if (e.key === "Enter" && searchVal.trim()) {
-            navigate(`/profile/${searchVal.trim()}`);
-            setSearchVal("");
-        }
-    };
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    window.location.href = '/login';
+  };
 
-    return (
-        <header className="sticky top-0 z-50 border-b border-ink-700 bg-ink-950/80 backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                {/* Logo */}
-                <a href="#" className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rank-blue/15 font-display text-base font-semibold text-rank-blue ring-1 ring-rank-blue/30">
-                        RS
-                    </div>
-                    <span className="font-display text-lg font-semibold tracking-tight text-ink-100">
-                        Ranking System
-                    </span>
-                </a>
+  const handleSearchSubmit = (e) => {
+    if (e.key === "Enter" && searchVal.trim()) {
+      navigate(`/profile/${searchVal.trim()}`);
+      setSearchVal("");
+      setMenuOpen(false);
+    }
+  };
 
-                {/* Desktop nav */}
-                <nav className="hidden items-center gap-8 md:flex">
-                    {NAV_LINKS.map((link) => (
-                        link.href.startsWith("http") ? (
-                            <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="text-sm font-medium text-ink-400 transition hover:text-ink-100">{link.label}</a>
-                        ) : (
-                            <NavLink key={link.label} to={`/${link.href}`} className={({ isActive }) => `text-sm font-medium transition ${isActive ? "text-rank-blue" : "text-ink-400 hover:text-ink-100"}`}>{link.label}</NavLink>
-                        )
-                    ))}
-                    {isAdmin() && (
-                        <NavLink to="/admin" className={({ isActive }) => `text-sm font-medium transition ${isActive ? "text-amber-400" : "text-amber-500/70 hover:text-amber-400"}`}>Admin</NavLink>
-                    )}
-                </nav>
-
-                {/* Right side: search + auth */}
-                <div className="hidden items-center gap-3 md:flex">
-                    <label className="relative">
-                        <span className="sr-only">Search a user</span>
-                        <input
-                            type="text"
-                            placeholder="Search handle…"
-                            value={searchVal}
-                            onChange={(e) => setSearchVal(e.target.value)}
-                            onKeyDown={handleSearchSubmit}
-                            className="w-48 rounded-lg border border-ink-600 bg-ink-800/60 py-1.5 pl-8 pr-3 font-mono text-sm text-ink-100 placeholder:text-ink-400 outline-none transition focus:border-rank-blue focus:ring-2 focus:ring-rank-blue/30"
-                        />
-                        <svg
-                            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-400"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <circle cx="11" cy="11" r="7" />
-                            <path d="M21 21l-4.3-4.3" strokeLinecap="round" />
-                        </svg>
-                    </label>
-
-                    <button
-                        onClick={handleLogout}
-                        className="rounded-lg border border-ink-600 px-4 py-1.5 text-sm font-medium text-ink-100 transition hover:bg-ink-800"
-                    >
-                        Sign out
-                    </button>
-                </div>
-
-                {/* Mobile menu button */}
-                <button
-                    onClick={() => setMenuOpen((v) => !v)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-ink-600 text-ink-200 md:hidden"
-                    aria-label="Toggle menu"
-                    aria-expanded={menuOpen}
-                >
-                    <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        {menuOpen ? (
-                            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-                        ) : (
-                            <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-                        )}
-                    </svg>
-                </button>
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-background/60 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
+        <div className="flex items-center gap-6">
+          <a href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shadow-sm">
+              RS
             </div>
+            <span className="hidden font-display text-lg font-semibold tracking-tight sm:inline-block">
+              Ranking System
+            </span>
+          </a>
 
-            {/* Mobile menu */}
-            {menuOpen && (
-                <div className="border-t border-ink-700 bg-ink-950 px-6 py-4 md:hidden">
-                    <nav className="flex flex-col gap-1">
-                        {NAV_LINKS.map((link) => (
-                            link.href.startsWith("http") ? (
-                                <a
-                                    key={link.label}
-                                    href={link.href}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    onClick={() => setMenuOpen(false)}
-                                    className="rounded-lg px-3 py-2 text-sm font-medium text-ink-200 hover:bg-ink-800 transition"
-                                >
-                                    {link.label}
-                                </a>
-                            ) : (
-                                <NavLink
-                                    key={link.label}
-                                    to={`/${link.href}`}
-                                    onClick={() => setMenuOpen(false)}
-                                    className={({ isActive }) =>
-                                        `rounded-lg px-3 py-2 text-sm font-medium transition ${isActive
-                                            ? "bg-rank-blue/10 text-rank-blue"
-                                            : "text-ink-200 hover:bg-ink-800"
-                                        }`
-                                    }
-                                >
-                                    {link.label}
-                                </NavLink>
-                            )
-                        ))}
-                    </nav>
-                    <div className="mt-4 flex items-center gap-3 border-t border-ink-700 pt-4">
-                        <button onClick={handleLogout} className="flex-1 rounded-lg border border-ink-600 py-2 text-center text-sm font-medium text-ink-100 hover:bg-ink-800">
-                            Sign out
-                        </button>
-                    </div>
-                </div>
+          <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return link.href.startsWith("http") ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </a>
+              ) : (
+                <NavLink
+                  key={link.label}
+                  to={`/${link.href}`}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground ${
+                      isActive ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground"
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </NavLink>
+              );
+            })}
+            {isAdmin() && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `flex items-center gap-2 rounded-md px-3 py-2 transition-colors hover:bg-accent hover:text-accent-foreground ${
+                    isActive ? "bg-warning/20 text-warning font-semibold" : "text-warning/80"
+                  }`
+                }
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin
+              </NavLink>
             )}
-        </header>
-    );
+          </nav>
+        </div>
+
+        <div className="hidden md:flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search users..."
+              className="pl-9 bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-ring rounded-full"
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
+              onKeyDown={handleSearchSubmit}
+            />
+          </div>
+          
+          <Button variant="ghost" size="icon" className="text-muted-foreground">
+            <Bell className="h-[1.2rem] w-[1.2rem]" />
+          </Button>
+
+          <ThemeToggle />
+
+          <Button variant="outline" onClick={handleLogout} className="rounded-full gap-2">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+
+        {/* Mobile Toggle */}
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="md:hidden border-t bg-background px-4 py-4 shadow-lg animate-in slide-in-from-top-2">
+          <div className="mb-4 relative">
+             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+             <Input
+                type="search"
+                placeholder="Search users..."
+                className="pl-9 w-full"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+              />
+          </div>
+          <nav className="flex flex-col gap-2">
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return link.href.startsWith("http") ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </a>
+              ) : (
+                <NavLink
+                  key={link.label}
+                  to={`/${link.href}`}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.label}
+                </NavLink>
+              );
+            })}
+            {isAdmin() && (
+              <NavLink
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isActive ? "bg-warning/20 text-warning" : "text-warning/80 hover:bg-accent hover:text-warning"
+                  }`
+                }
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin
+              </NavLink>
+            )}
+          </nav>
+          <div className="mt-4 pt-4 border-t">
+            <Button variant="outline" className="w-full gap-2 justify-center" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
 }

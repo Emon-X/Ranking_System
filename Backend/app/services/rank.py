@@ -388,7 +388,12 @@ async def recalculate_all_users_standings(db: Any):
             
     db.commit()
     
-    sorted_participants = db.query(Participant).order_by(Participant.weekly_points.desc()).all()
+    sorted_participants = db.query(Participant).order_by(
+        Participant.weekly_points.desc(),
+        Participant.codeforces_rating.desc(),
+        Participant.atcoder_rating.desc(),
+        Participant.total_solved_last_7_days.desc()
+    ).all()
     for index, p in enumerate(sorted_participants):
         rank = index + 1
         p.weekly_position = rank
@@ -418,7 +423,7 @@ async def check_and_process_finished_contests(db: Any):
     contest_to_process = None
     
     for contest in unprocessed:
-        end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds)
+        end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds or 7200)
         if now >= end_time:
             contest_to_process = contest
             break
@@ -496,7 +501,7 @@ async def update_new_user_with_latest_contest(db: Any, new_user: Participant):
     latest_past_contest = None
     for contest in contests:
         if contest.scheduled_at:
-            end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds)
+            end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds or 7200)
             if now >= end_time:
                 latest_past_contest = contest
                 break

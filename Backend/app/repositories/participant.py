@@ -63,7 +63,12 @@ class ParticipantRepository(BaseRepository):
        
     
     def get_all_participants(self):
-        return self.db.query(Participant).order_by(Participant.weekly_points.desc()).all()
+        return self.db.query(Participant).order_by(
+            Participant.weekly_points.desc(),
+            Participant.codeforces_rating.desc(),
+            Participant.atcoder_rating.desc(),
+            Participant.total_solved_last_7_days.desc()
+        ).all()
     
     def Login(self,username :str,password : str):
         
@@ -77,8 +82,12 @@ class ParticipantRepository(BaseRepository):
         return user
     
     def get_user_by_rank(self):
-        
-        users = self.db.query(Participant).order_by(Participant.weekly_points.desc()).all()
+        users = self.db.query(Participant).order_by(
+            Participant.weekly_points.desc(),
+            Participant.codeforces_rating.desc(),
+            Participant.atcoder_rating.desc(),
+            Participant.total_solved_last_7_days.desc()
+        ).all()
         return users
     
     def get_user_by_solve(self):
