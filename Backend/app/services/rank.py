@@ -66,6 +66,31 @@ def _submission_problem_key(submission: dict[str, Any]) -> str:
     name = problem.get("name") or ""
     return f"{contest_id}:{index}:{name}"
 
+_CODEFORCES_SEMAPHORE = asyncio.Semaphore(2)
+
+async def _codeforces_get(url: str, params: dict | None = None) -> Any:
+    async with _CODEFORCES_SEMAPHORE:
+        await asyncio.sleep(0.5)
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            for attempt in range(3):
+                try:
+                    response = await client.get(url, params=params)
+                    if response.status_code in (429, 403, 503) or (response.status_code == 400 and "limit" in response.text.lower()):
+                        await asyncio.sleep(2.0 * (attempt + 1))
+                        continue
+                    response.raise_for_status()
+                    return response.json()
+                except httpx.HTTPStatusError as e:
+                    if attempt == 2 or (e.response.status_code not in (429, 403, 503) and not (e.response.status_code == 400 and "limit" in e.response.text.lower())):
+                        raise e
+                    await asyncio.sleep(2.0 * (attempt + 1))
+                except httpx.HTTPError as e:
+                    if attempt == 2:
+                        raise e
+                    await asyncio.sleep(2.0 * (attempt + 1))
+    return None
+
+
 
 def calculate_weekly_points(
     codeforces_solved_count: int,
@@ -106,11 +131,7 @@ async def fetch_codeforces_solved_count(handle: str) -> int:
     cutoff_timestamp = _utc_cutoff_timestamp()
 
     try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            response = await client.get("https://codeforces.com/api/user.status", params=params)
-            response.raise_for_status()
-
-        payload = response.json()
+        payload = await _codeforces_get("https://codeforces.com/api/user.status", params=params)
         if not isinstance(payload, dict) or payload.get("status") != "OK":
             return 0
 
@@ -173,15 +194,12 @@ async def fetch_codeforces_rating(handle: str) -> float:
     if not handle:
         return 0.0
     
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        try:
-            response = await client.get(f"https://codeforces.com/api/user.info?handles={handle}")
-            response.raise_for_status()
-            payload = response.json()
-            if payload.get("status") == "OK" and payload.get("result"):
-                return float(payload["result"][0].get("rating", 0.0))
-        except Exception:
-            pass
+    try:
+        payload = await _codeforces_get(f"https://codeforces.com/api/user.info?handles={handle}")
+        if payload and isinstance(payload, dict) and payload.get("status") == "OK" and payload.get("result"):
+            return float(payload["result"][0].get("rating", 0.0))
+    except Exception as exc:
+        logger.error(f"Codeforces rating fetch failed for {handle}: {exc}")
     return 0.0
 
 

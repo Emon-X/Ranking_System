@@ -118,12 +118,18 @@ def _build_standings(data: dict[str, Any], contest_url: str) -> ScrapedContest:
 	)
 
 
+_VJUDGE_HEADERS = {
+	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+	"Accept": "application/json, text/plain, */*",
+	"Referer": "https://vjudge.net/",
+}
+
 async def scrape_vjudge_contest(url: str) -> ScrapedContest:
 	contest_url = _normalize_url(url)
 	contest_id = _extract_contest_id(contest_url)
 	api_url = f"https://vjudge.net/contest/rank/single/{contest_id}"
 
-	async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+	async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_VJUDGE_HEADERS) as client:
 		try:
 			response = await client.get(api_url)
 			response.raise_for_status()
