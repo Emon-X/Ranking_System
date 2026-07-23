@@ -7,8 +7,7 @@ from urllib.parse import urlparse
 import re
 
 import httpx
-
-
+from curl_cffi.requests import AsyncSession
 class VJudgeScrapeError(RuntimeError):
 	pass
 
@@ -129,14 +128,15 @@ async def scrape_vjudge_contest(url: str) -> ScrapedContest:
 	contest_id = _extract_contest_id(contest_url)
 	api_url = f"https://vjudge.net/contest/rank/single/{contest_id}"
 
-	async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_VJUDGE_HEADERS) as client:
+	async with AsyncSession(impersonate="chrome", timeout=30.0) as client:
 		try:
-			response = await client.get(api_url)
+			response = await client.get(api_url, headers=_VJUDGE_HEADERS)
 			response.raise_for_status()
-		except httpx.HTTPStatusError as exc:
-			status_code = exc.response.status_code if exc.response is not None else "unknown"
-			raise VJudgeScrapeError(f"VJudge contest rank endpoint returned HTTP {status_code}.") from exc
-		except httpx.HTTPError as exc:
+		except Exception as exc:
+			response_attr = getattr(exc, "response", None)
+			status_code = getattr(response_attr, "status_code", "unknown") if response_attr else "unknown"
+			if status_code != "unknown":
+				raise VJudgeScrapeError(f"VJudge contest rank endpoint returned HTTP {status_code}.") from exc
 			raise VJudgeScrapeError("Failed to contact the VJudge contest rank endpoint.") from exc
 
 	try:
