@@ -1,6 +1,6 @@
 # ACM Lab Ranking System
 
-A competitive programming ranking platform built for the **CSE Department, Mawlana Bhashani Science and Technology University (MBSTU)**. It tracks participants across VJudge contests, Codeforces, and AtCoder — automatically calculating weekly points and maintaining a live leaderboard.
+A competitive programming ranking platform built for **CP COMMUNITY**. It tracks participants across VJudge contests, Codeforces, and AtCoder — automatically calculating weekly points and maintaining a live leaderboard.
 
 **Live app:** [ranking-system-zeta.vercel.app](https://ranking-system-zeta.vercel.app)
 
