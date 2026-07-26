@@ -47,7 +47,7 @@ class ContestWeeklyScoreUpdate:
 	weekly_points: int
 
 
-def _utc_cutoff_timestamp(days: int = 30) -> int:
+def _utc_cutoff_timestamp(days: int = 7) -> int:
     return int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
 
 
@@ -67,11 +67,15 @@ def _submission_problem_key(submission: dict[str, Any]) -> str:
     return f"{contest_id}:{index}:{name}"
 
 _CODEFORCES_SEMAPHORE = asyncio.Semaphore(2)
+_CODEFORCES_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+}
 
 async def _codeforces_get(url: str, params: dict | None = None) -> Any:
     async with _CODEFORCES_SEMAPHORE:
         await asyncio.sleep(0.5)
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_CODEFORCES_HEADERS) as client:
             for attempt in range(3):
                 try:
                     response = await client.get(url, params=params)
@@ -101,12 +105,12 @@ def calculate_weekly_points(
     weekly_contest_solved_problem: int = 0,
     max_solved_problem: int = 1,
 ) -> tuple[float, int]:
-    problem_count = codeforces_solved_count + atcoder_solved_count + contest_solved_count
+    problem_count = codeforces_solved_count + atcoder_solved_count + weekly_contest_solved_problem
     weekly_contest_point = 0.0
     if max_solved_problem > 0:
         weekly_contest_point = (weekly_contest_solved_problem / max_solved_problem) * 50
 
-    total_point = problem_count + (codeforces_rating / 1600.0) * 15 + (atcoder_rating / 600.0) * 10 + weekly_contest_point * 0.25
+    total_point = problem_count + (codeforces_rating / 1600.0) * 15 + (atcoder_rating / 600.0) * 10 + weekly_contest_point * 0.15
     return total_point, int(round(total_point))
 
 
@@ -151,6 +155,36 @@ async def fetch_codeforces_solved_count(handle: str) -> int:
         return 0
 
 
+_ATCODER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Referer": "https://atcoder.jp/",
+}
+_ATCODER_SEMAPHORE = asyncio.Semaphore(1)
+
+async def _atcoder_get(url: str, params: dict | None = None) -> httpx.Response | None:
+    async with _ATCODER_SEMAPHORE:
+        await asyncio.sleep(1.0)
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_ATCODER_HEADERS) as client:
+            for attempt in range(3):
+                try:
+                    response = await client.get(url, params=params)
+                    if response.status_code in (429, 403, 503):
+                        await asyncio.sleep(2.0 * (attempt + 1))
+                        continue
+                    response.raise_for_status()
+                    return response
+                except httpx.HTTPStatusError as e:
+                    if attempt == 2 or e.response.status_code not in (429, 403, 503):
+                        raise e
+                    await asyncio.sleep(2.0 * (attempt + 1))
+                except httpx.HTTPError as e:
+                    if attempt == 2:
+                        raise e
+                    await asyncio.sleep(2.0 * (attempt + 1))
+    return None
+
+
 async def fetch_atcoder_solved_count(handle: str) -> int:
     handle = _normalize_handle(handle)
     if not handle:
@@ -163,9 +197,9 @@ async def fetch_atcoder_solved_count(handle: str) -> int:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            response = await client.get("https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions", params=params)
-            response.raise_for_status()
+        response = await _atcoder_get("https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions", params=params)
+        if not response:
+            return 0
 
         payload = response.json()
         if not isinstance(payload, list):
@@ -203,45 +237,40 @@ async def fetch_codeforces_rating(handle: str) -> float:
     return 0.0
 
 
-_ATCODER_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Referer": "https://atcoder.jp/",
-}
-
 async def fetch_atcoder_rating(handle: str) -> float:
     handle = _normalize_handle(handle)
     if not handle:
         return 0.0
 
     url = f"https://atcoder.jp/users/{handle}/history/json"
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True, headers=_ATCODER_HEADERS) as client:
-        try:
-            response = await client.get(url)
-            # আগে raw status + snippet log করুন, তারপর raise
-            logger.info(f"AtCoder rating fetch {handle}: status={response.status_code}")
-            response.raise_for_status()
+    try:
+        response = await _atcoder_get(url)
+        if not response:
+            return 0.0
+            
+        # আগে raw status + snippet log করুন, তারপর raise
+        logger.info(f"AtCoder rating fetch {handle}: status={response.status_code}")
 
-            content_type = response.headers.get("content-type", "")
-            if "json" not in content_type:
-                # AtCoder bot-check বা Cloudflare HTML page ফেরত দিলে এটা ধরা পড়বে
-                logger.error(
-                    f"AtCoder returned non-JSON for {handle}: "
-                    f"content-type={content_type}, body[:200]={response.text[:200]!r}"
-                )
-                return 0.0
-
-            payload = response.json()
-            if isinstance(payload, list) and payload:
-                return float(payload[-1].get("NewRating", 0.0))
-            logger.warning(f"AtCoder history empty for handle={handle}")
-        except httpx.HTTPStatusError as e:
+        content_type = response.headers.get("content-type", "")
+        if "json" not in content_type:
+            # AtCoder bot-check বা Cloudflare HTML page ফেরত দিলে এটা ধরা পড়বে
             logger.error(
-                f"AtCoder rating fetch failed for {handle}: "
-                f"status={e.response.status_code}, body[:200]={e.response.text[:200]!r}"
+                f"AtCoder returned non-JSON for {handle}: "
+                f"content-type={content_type}, body[:200]={response.text[:200]!r}"
             )
-        except Exception as e:
-            logger.error(f"AtCoder rating fetch failed for {handle}: {e}")
+            return 0.0
+
+        payload = response.json()
+        if isinstance(payload, list) and payload:
+            return float(payload[-1].get("NewRating", 0.0))
+        logger.warning(f"AtCoder history empty for handle={handle}")
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            f"AtCoder rating fetch failed for {handle}: "
+            f"status={e.response.status_code}, body[:200]={e.response.text[:200]!r}"
+        )
+    except Exception as e:
+        logger.error(f"AtCoder rating fetch failed for {handle}: {e}")
     return 0.0
 
 async def fetch_participant_solved_counts(participant: Any) -> ParticipantSolvedCount:
