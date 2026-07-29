@@ -11,15 +11,34 @@ from app.core.dependencis import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+from fastapi import BackgroundTasks
+import asyncio
+from app.database.db import session_local
+
+def run_standings_update_task(refresh: bool):
+    async def _async_task():
+        db = session_local()
+        try:
+            from app.services.rank import check_and_process_finished_contests, recalculate_all_users_standings
+            await check_and_process_finished_contests(db)
+            if refresh:
+                await recalculate_all_users_standings(db)
+        finally:
+            db.close()
+    
+    asyncio.run(_async_task())
+
 @router.get("/ViewAllUsers_by_Rank", response_model=ParticipantWeeklyPointsListResponse)
-async def view_all_users_by_rank(refresh: bool = False, db : Session = Depends(get_db), current_user = Depends(get_current_user)):
-    from app.services.rank import check_and_process_finished_contests, recalculate_all_users_standings
+async def view_all_users_by_rank(
+    background_tasks: BackgroundTasks,
+    refresh: bool = False, 
+    db : Session = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    # Process finished contests (and manual refresh) automatically in the background
+    # This ensures the API always responds instantly with the latest DB data.
+    background_tasks.add_task(run_standings_update_task, refresh)
     
-    # Check and process finished contests automatically
-    await check_and_process_finished_contests(db)
-    
-    if refresh:
-        await recalculate_all_users_standings(db)
         
     participants = ParticipantRepository(db).get_all_participants()
 

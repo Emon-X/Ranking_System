@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db, session_local
 from app.repositories.participant import ParticipantRepository
 from app.core.security import AuthHelper
-from app.services.rank import recalculate_all_users_standings, update_new_user_with_latest_contest
+from app.services.rank import recalculate_all_users_standings, update_new_user_with_latest_contest, calculate_new_user_weekly_score
 from app.models.participant import Participant as ParticipantModel
 import asyncio
 
@@ -18,7 +18,7 @@ def run_recalc_task(participant_id: int):
             user = db.query(ParticipantModel).filter(ParticipantModel.id == participant_id).first()
             if user:
                 await update_new_user_with_latest_contest(db, user)
-                await recalculate_all_users_standings(db)
+                await calculate_new_user_weekly_score(db, user)
         finally:
             db.close()
     

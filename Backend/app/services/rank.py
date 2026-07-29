@@ -367,10 +367,22 @@ async def fetch_participants_solved_counts(participants: list[Any]) -> list[Part
 
 
 async def fetch_participants_weekly_scores(participants: list[Any]) -> list[ParticipantWeeklyScore]:
-	if not participants:
-		return []
+    if not participants:
+        return []
 
-	return await asyncio.gather(*(fetch_participant_weekly_score(participant) for participant in participants))
+    scores = []
+    for participant in participants:
+        try:
+            score = await fetch_participant_weekly_score(participant)
+            scores.append(score)
+        except Exception as e:
+            username = getattr(participant, "username", "unknown")
+            logger.error(f"Error fetching weekly score for participant {username}: {e}")
+        
+        # Ensure a 2-second interval between processing each user to respect API limits
+        await asyncio.sleep(2.0)
+        
+    return scores
 
 
 def build_contest_weekly_score_updates(contests: list[Any], participants: list[Any]) -> list[ContestWeeklyScoreUpdate]:
@@ -408,6 +420,47 @@ def build_contest_weekly_score_updates(contests: list[Any], participants: list[A
 
 logger = logging.getLogger(__name__)
 
+def update_all_ranks_in_db(db: Any):
+    import json
+    sorted_participants = db.query(Participant).order_by(
+        Participant.weekly_points.desc(),
+        Participant.codeforces_rating.desc(),
+        Participant.atcoder_rating.desc(),
+        Participant.total_solved_last_7_days.desc()
+    ).all()
+    for index, p in enumerate(sorted_participants):
+        rank = index + 1
+        p.weekly_position = rank
+        
+        try:
+            history = json.loads(p.weekly_positions_history or "[]")
+        except Exception:
+            history = []
+        if not isinstance(history, list):
+            history = []
+            
+        history.append(rank)
+        p.weekly_positions_history = json.dumps(history)
+        
+    db.commit()
+
+async def calculate_new_user_weekly_score(db: Any, user: Participant):
+    try:
+        score = await fetch_participant_weekly_score(user)
+        user.codeforces_solved_last_7_days = score.codeforces_solved_last_7_days
+        user.atcoder_solved_last_7_days = score.atcoder_solved_last_7_days
+        user.total_solved_last_7_days = score.total_solved_last_7_days
+        user.codeforces_rating = int(score.codeforces_rating)
+        user.atcoder_rating = int(score.atcoder_rating)
+        user.weekly_contest_point = score.weekly_contest_point
+        user.weekly_points = score.weekly_points
+        
+        db.commit()
+        update_all_ranks_in_db(db)
+    except Exception as e:
+        logger.error(f"Error calculating score for new user: {e}")
+
+
 async def recalculate_all_users_standings(db: Any):
     import json
     
@@ -434,28 +487,7 @@ async def recalculate_all_users_standings(db: Any):
             p.weekly_points = score.weekly_points
             
     db.commit()
-    
-    sorted_participants = db.query(Participant).order_by(
-        Participant.weekly_points.desc(),
-        Participant.codeforces_rating.desc(),
-        Participant.atcoder_rating.desc(),
-        Participant.total_solved_last_7_days.desc()
-    ).all()
-    for index, p in enumerate(sorted_participants):
-        rank = index + 1
-        p.weekly_position = rank
-        
-        try:
-            history = json.loads(p.weekly_positions_history or "[]")
-        except Exception:
-            history = []
-        if not isinstance(history, list):
-            history = []
-            
-        history.append(rank)
-        p.weekly_positions_history = json.dumps(history)
-        
-    db.commit()
+    update_all_ranks_in_db(db)
 
 
 async def check_and_process_finished_contests(db: Any):
