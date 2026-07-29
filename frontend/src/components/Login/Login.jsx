@@ -84,8 +84,10 @@ export default function Login() {
         localStorage.setItem("username", data.username || "");
         navigate("/");
       } else {
-        const res = await fetch(`${API_BASE_URL}/auth/SignIn?username=${encodeURIComponent(handle)}&password=${encodeURIComponent(password)}`, {
-          method: "POST"
+        const res = await fetch(`${API_BASE_URL}/auth/SignIn`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: handle, password: password })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || "Invalid handle or password.");

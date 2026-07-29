@@ -24,9 +24,15 @@ def run_recalc_task(participant_id: int):
     
     asyncio.run(_async_task())
 
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 @auth_router.post("/SignIn")
-async def login(username: str, password: str, db: Session = Depends(get_db)):
-    user = ParticipantRepository(db).Login(username, password)
+async def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = ParticipantRepository(db).Login(payload.username, payload.password)
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     
