@@ -86,7 +86,7 @@ async def add_contest(payload: ContestCreateRequest, db: Session = Depends(get_d
 
 
 @router.post("/scrape", response_model=ContestScrapeResponse)
-async def scrape_contest_urls(payload: ContestScrapeRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)) -> ContestScrapeResponse:
+async def scrape_contest_urls(payload: ContestScrapeRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user = Depends(get_current_user)) -> ContestScrapeResponse:
     try:
         contests = await scrape_vjudge_contests([str(url) for url in payload.urls])
     except VJudgeScrapeError as exc:
@@ -96,15 +96,42 @@ async def scrape_contest_urls(payload: ContestScrapeRequest, db: Session = Depen
         raise HTTPException(status_code=403, detail="You do not have permission to scrape contests.")
 
     participants = ParticipantRepository(db).get_all_participants()
-    updates = build_contest_weekly_score_updates(contests, participants)
     
-    participant_by_username = {participant.username: participant for participant in participants}
-    for update in updates:
-        participant = participant_by_username.get(update.username)
-        if participant is not None:
-            participant.weekly_points = update.weekly_points
+    contest_entries: dict[str, int] = {}
+    for contest in contests:
+        for contestant in getattr(contest, "contestants", []) or []:
+            username = str(getattr(contestant, "vjudge_handle", "") or "").strip().lower()
+            if not username:
+                username = str(getattr(contestant, "contestant", "") or "").strip().lower()
+            if not username:
+                continue
+            contest_entries[username] = max(contest_entries.get(username, 0), int(getattr(contestant, "solves", 0) or 0))
+
+    max_solved_problem = max(contest_entries.values(), default=0)
+    
+    for p in participants:
+        p_u = str(p.username or "").strip().lower()
+        p_vh = str(p.vjudge_handle or "").strip().lower()
+        
+        solves = 0
+        if p_vh in contest_entries:
+            solves = contest_entries[p_vh]
+        elif p_u in contest_entries:
+            solves = contest_entries[p_u]
+            
+        p.weekly_contest_solved_problem = solves
+        p.max_solved_problem = max_solved_problem
+        # Do not increment contest_solved_count repeatedly on every manual sync of the same contest to avoid duplication,
+        # or we assume manual sync is authoritative. We'll leave contest_solved_count increment as it was before, 
+        # actually previous scrape didn't even increment it, so we'll just set the weekly_contest_solved_problem.
+        p.contest_solved_count = (p.contest_solved_count or 0) + solves
 
     db.commit()
+    
+    # Run the recalculation in the background so the HTTP request returns instantly!
+    from app.routers.user import run_standings_update_task
+    background_tasks.add_task(run_standings_update_task, True)
+
 
     return ContestScrapeResponse(
         results=[

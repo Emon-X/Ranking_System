@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 import re
 
 import httpx
-from curl_cffi.requests import AsyncSession
 class VJudgeScrapeError(RuntimeError):
 	pass
 
@@ -128,7 +127,7 @@ async def scrape_vjudge_contest(url: str) -> ScrapedContest:
 	contest_id = _extract_contest_id(contest_url)
 	api_url = f"https://vjudge.net/contest/rank/single/{contest_id}"
 
-	async with AsyncSession(impersonate="chrome", timeout=30.0) as client:
+	async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
 		try:
 			response = await client.get(api_url, headers=_VJUDGE_HEADERS)
 			response.raise_for_status()
