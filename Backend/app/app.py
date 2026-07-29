@@ -30,6 +30,7 @@ async def create_tables() -> None:
 origins = [
     "http://localhost:5173",
     "https://ranking-system-zeta.vercel.app",
+    "https://ranking-system-ucns.onrender.com",
 ]
 
 app.add_middleware(
