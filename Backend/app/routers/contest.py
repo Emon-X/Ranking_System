@@ -33,8 +33,8 @@ def run_process_contests_task():
 @router.get("/list", response_model=ContestListResponse)
 async def list_contests(background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Return all stored contests; frontend splits upcoming, running vs past."""
-    background_tasks.add_task(run_process_contests_task)
     
+
     contests = ContestRepository(db).get_all()
     now = datetime.utcnow()
     
