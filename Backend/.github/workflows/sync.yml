@@ -1,4 +1,4 @@
-name: Sync AtCoder Ratings
+name: Sync Platform Stats (Codeforces & AtCoder)
 
 on:
   schedule:

@@ -20,11 +20,31 @@ app = FastAPI(
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database.migration import migrate_db
+from .database.db import session_local
+from .services.rank import check_and_process_finished_contests
+import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def periodic_contest_processor() -> None:
+    logger.info("Starting background periodic contest processor...")
+    while True:
+        try:
+            db = session_local()
+            try:
+                await check_and_process_finished_contests(db)
+            finally:
+                db.close()
+        except Exception as e:
+            logger.error(f"Error in periodic_contest_processor: {e}")
+        await asyncio.sleep(60)
 
 @app.on_event("startup")
-async def create_tables() -> None:
+async def startup_event() -> None:
     Base.metadata.create_all(bind=engine)
     migrate_db(engine)
+    asyncio.create_task(periodic_contest_processor())
 
 
 origins = [

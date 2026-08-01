@@ -379,7 +379,7 @@ async def fetch_participants_weekly_scores(participants: list[Any]) -> list[Part
             username = getattr(participant, "username", "unknown")
             logger.error(f"Error fetching weekly score for participant {username}: {e}")
         
-        # Ensure a 2-second interval between processing each user to respect API limits
+        # Ensure a 2-second interval between proce  ssing each user to respect API limits
         await asyncio.sleep(2.0)
         
     return scores
@@ -491,84 +491,81 @@ async def recalculate_all_users_standings(db: Any):
 
 
 async def check_and_process_finished_contests(db: Any):
-   
     now = datetime.utcnow()
-    # Sort unprocessed by scheduled_at desc to find the latest ones first
+    # Sort unprocessed by scheduled_at asc to process in chronological order
     unprocessed = db.query(Contest).filter(
         Contest.scheduled_at != None,
         Contest.processed == False
-    ).order_by(Contest.scheduled_at.desc()).all()
+    ).order_by(Contest.scheduled_at.asc()).all()
     
-    contest_to_process = None
-    
-    for contest in unprocessed:
-        end_time = contest.scheduled_at + timedelta(seconds=contest.duration_seconds or 7200)
-        if now >= end_time:
-            contest_to_process = contest
-            break
+    processed_any = False
+    for contest_to_process in unprocessed:
+        end_time = contest_to_process.scheduled_at + timedelta(seconds=contest_to_process.duration_seconds or 7200)
+        if now < end_time:
+            continue
             
-    if not contest_to_process:
-        return
+        try:
+            logger.info(f"Processing finished contest: {contest_to_process.name} ({contest_to_process.vjudge_url})")
+            scraped = await scrape_vjudge_contest(contest_to_process.vjudge_url)
             
-    try:
-        logger.info(f"Processing finished contest: {contest_to_process.name} ({contest_to_process.vjudge_url})")
-        scraped = await scrape_vjudge_contest(contest_to_process.vjudge_url)
-        
-        if scraped.contest_name and not contest_to_process.name:
-            contest_to_process.name = scraped.contest_name
-            
-        participants = db.query(Participant).all()
-        participant_by_handle = {}
-        for p in participants:
-            u = str(p.username or "").strip().lower()
-            vh = str(p.vjudge_handle or "").strip().lower()
-            if u:
-                participant_by_handle[u] = p
-            if vh:
-                participant_by_handle[vh] = p
+            if scraped.contest_name and not contest_to_process.name:
+                contest_to_process.name = scraped.contest_name
                 
-        solves_list = [c.solves for c in scraped.contestants]
-        max_solves = max(solves_list) if solves_list else 0
-        
-        scraped_solves_by_handle = {}
-        for c in scraped.contestants:
-            display_name = str(c.contestant or "")
-            handles = []
-            if "(" in display_name and display_name.endswith(")"):
-                name_part = display_name[:display_name.find("(")].strip().lower()
-                nickname_part = display_name[display_name.find("(")+1:-1].strip().lower()
-                handles.extend([name_part, nickname_part])
-            else:
-                handles.append(display_name.strip().lower())
-                
-            if c.vjudge_handle:
-                handles.append(str(c.vjudge_handle).strip().lower())
-                
-            for h in handles:
-                if h:
-                    scraped_solves_by_handle[h] = c.solves
+            participants = db.query(Participant).all()
+            participant_by_handle = {}
+            for p in participants:
+                u = str(p.username or "").strip().lower()
+                vh = str(p.vjudge_handle or "").strip().lower()
+                if u:
+                    participant_by_handle[u] = p
+                if vh:
+                    participant_by_handle[vh] = p
                     
-        for p in participants:
-            solves = 0
-            p_u = str(p.username or "").strip().lower()
-            p_vh = str(p.vjudge_handle or "").strip().lower()
+            solves_list = [c.solves for c in scraped.contestants]
+            max_solves = max(solves_list) if solves_list else 0
             
-            if p_vh in scraped_solves_by_handle:
-                solves = scraped_solves_by_handle[p_vh]
-            elif p_u in scraped_solves_by_handle:
-                solves = scraped_solves_by_handle[p_u]
+            scraped_solves_by_handle = {}
+            for c in scraped.contestants:
+                display_name = str(c.contestant or "")
+                handles = []
+                if "(" in display_name and display_name.endswith(")"):
+                    name_part = display_name[:display_name.find("(")].strip().lower()
+                    nickname_part = display_name[display_name.find("(")+1:-1].strip().lower()
+                    handles.extend([name_part, nickname_part])
+                else:
+                    handles.append(display_name.strip().lower())
+                    
+                if c.vjudge_handle:
+                    handles.append(str(c.vjudge_handle).strip().lower())
+                    
+                for h in handles:
+                    if h:
+                        scraped_solves_by_handle[h] = c.solves
+                        
+            for p in participants:
+                solves = 0
+                p_u = str(p.username or "").strip().lower()
+                p_vh = str(p.vjudge_handle or "").strip().lower()
                 
-            p.weekly_contest_solved_problem = solves
-            p.max_solved_problem = max_solves
-            p.contest_solved_count = (p.contest_solved_count or 0) + solves
+                if p_vh in scraped_solves_by_handle:
+                    solves = scraped_solves_by_handle[p_vh]
+                elif p_u in scraped_solves_by_handle:
+                    solves = scraped_solves_by_handle[p_u]
+                    
+                p.weekly_contest_solved_problem = solves
+                p.max_solved_problem = max_solves
+                p.contest_solved_count = (p.contest_solved_count or 0) + solves
+                
+            contest_to_process.processed = True
+            db.commit()
+            processed_any = True
+            logger.info(f"Successfully processed contest {contest_to_process.vjudge_url}")
             
-        contest_to_process.processed = True
-        db.commit()
-        
-    except Exception as e:
-        logger.error(f"Failed to process finished contest {contest_to_process.vjudge_url}: {e}")
-        
-    await recalculate_all_users_standings(db)
+        except Exception as e:
+            logger.error(f"Failed to process finished contest {contest_to_process.vjudge_url}: {e}")
+            
+    if processed_any:
+        await recalculate_all_users_standings(db)
 
 
 async def update_new_user_with_latest_contest(db: Any, new_user: Participant):

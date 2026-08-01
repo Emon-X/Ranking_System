@@ -260,6 +260,22 @@ function ScrapeContestSection() {
   const [status, setStatus] = useState("idle");
   const [results, setResults] = useState(null);
   const [error, setError] = useState("");
+  const [timer, setTimer] = useState(0);
+
+  useEffect(() => {
+    let interval = null;
+    if (status === "loading") {
+      setTimer(0);
+      interval = setInterval(() => {
+        setTimer(t => t + 1);
+      }, 1000);
+    } else {
+      if (interval) clearInterval(interval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [status]);
 
   const handleScrape = async (e) => {
     e.preventDefault();
@@ -291,7 +307,12 @@ function ScrapeContestSection() {
             </div>
             {error && <div className="p-3 rounded-md text-sm border bg-destructive/10 text-destructive border-destructive/20">{error}</div>}
             <Button type="submit" className="w-full" disabled={status === "loading" || !urls.trim()}>
-              {status === "loading" ? "Processing Data..." : <><DownloadCloud className="mr-2 h-4 w-4" /> Run Sync Operation</>}
+              {status === "loading" ? (
+                <div className="flex items-center gap-2">
+                  <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  Processing Data... ({timer}s)
+                </div>
+              ) : <><DownloadCloud className="mr-2 h-4 w-4" /> Run Sync Operation</>}
             </Button>
           </form>
         </CardContent>

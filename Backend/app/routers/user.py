@@ -35,11 +35,9 @@ async def view_all_users_by_rank(
     db : Session = Depends(get_db), 
     current_user = Depends(get_current_user)
 ):
-    # Process finished contests (and manual refresh) automatically in the background
-    # This ensures the API always responds instantly with the latest DB data.
-    background_tasks.add_task(run_standings_update_task, refresh)
+    if refresh:
+        background_tasks.add_task(run_standings_update_task, True)
     
-        
     participants = ParticipantRepository(db).get_all_participants()
 
     return ParticipantWeeklyPointsListResponse(
