@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Header, HTTPException, Depends
 from sqlalchemy.orm import Session
+# pyrefly: ignore [missing-import]
 from app.models.participant import Participant
 from app.database.db import get_db
+from app.services.rank import calculate_weekly_points, update_all_ranks_in_db
 import os
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -76,7 +78,6 @@ def update_all_sync_stats(
     db: Session = Depends(get_db),
     _: None = Depends(verify_internal_secret),
 ):
-    from app.services.rank import calculate_weekly_points, update_all_ranks_in_db
     
     stats_list = payload.get("stats", [])
     updated = 0
