@@ -119,11 +119,11 @@ async def fetch_ac_rating(client: httpx.AsyncClient, handle: str) -> float:
     return 0.0
 
 
-async def fetch_ac_solved_7d(client: httpx.AsyncClient, handle: str) -> int:
+async def fetch_ac_solved_30d(client: httpx.AsyncClient, handle: str) -> int:
     handle = handle.strip()
     if not handle:
         return 0
-    cutoff_ts = _utc_cutoff_timestamp(7)
+    cutoff_ts = _utc_cutoff_timestamp(30)
     async with _AC_SEMAPHORE:
         await asyncio.sleep(2.0)
         for attempt in range(3):
@@ -168,7 +168,7 @@ async def process_participant(client: httpx.AsyncClient, p: dict) -> dict[str, A
 
     if ac_handle:
         ac_rating = await fetch_ac_rating(client, ac_handle)
-        ac_solved = await fetch_ac_solved_7d(client, ac_handle)
+        ac_solved = await fetch_ac_solved_30d(client, ac_handle)
 
     return {
         "id": p_id,

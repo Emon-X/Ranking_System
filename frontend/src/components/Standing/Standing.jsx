@@ -8,6 +8,7 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
+import { getCodeforcesRatingClass, getAtCoderRatingClass } from '../../lib/ratingColors';
 export default function Standing() {
   const [userData, setUserData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +144,7 @@ export default function Standing() {
             {/* Podium for Top 3 */}
             {topThree.length > 0 && (
               <section className="py-8">
-                <div className="flex flex-col sm:flex-row justify-center items-center sm:items-end gap-8 sm:gap-4 h-auto sm:h-[300px]">
+                <div className="flex flex-col sm:flex-row justify-center items-center sm:items-end gap-8 sm:gap-4 h-auto sm:min-h-[330px]">
                   {/* Rank 2 - Silver */}
                   {topThree[1] && (
                     <motion.div 
@@ -152,12 +153,20 @@ export default function Standing() {
                       transition={{ delay: 0.2 }}
                       className="flex flex-col items-center w-full sm:w-1/3 order-2 sm:order-1"
                     >
-                      <Link to={`/profile/${topThree[1].username}`} className="mb-4 text-center group">
+                      <Link to={`/profile/${topThree[1].username}`} className="mb-4 text-center group flex flex-col items-center">
                         <div className="h-16 w-16 mx-auto mb-2 rounded-full bg-secondary/80 border-4 border-muted-foreground/30 flex items-center justify-center text-xl font-bold group-hover:scale-110 transition-transform">
                           {topThree[1].name?.[0] || topThree[1].username?.[0] || "?"}
                         </div>
                         <p className="font-semibold">{topThree[1].username}</p>
                         <Badge variant="secondary" className="mt-1">{topThree[1].weekly_points} pts</Badge>
+                        <div className="flex items-center justify-center gap-1.5 mt-2 flex-wrap">
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getCodeforcesRatingClass(topThree[1].codeforces_rating)}`}>
+                            CF {topThree[1].codeforces_rating || 0}
+                          </Badge>
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getAtCoderRatingClass(topThree[1].atcoder_rating)}`}>
+                            AC {topThree[1].atcoder_rating || 0}
+                          </Badge>
+                        </div>
                       </Link>
                       <div className="w-full bg-muted-foreground/20 rounded-t-xl h-32 flex justify-center pt-4 relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-t from-muted-foreground/20 to-transparent" />
@@ -170,15 +179,23 @@ export default function Standing() {
                   {topThree[0] && (
                     <motion.div 
                       initial={{ opacity: 0, y: 50 }} 
-                      animate={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }} 
                       className="flex flex-col items-center w-full sm:w-1/3 order-1 sm:order-2"
                     >
-                      <Link to={`/profile/${topThree[0].username}`} className="mb-4 text-center group">
+                      <Link to={`/profile/${topThree[0].username}`} className="mb-4 text-center group flex flex-col items-center">
                         <div className="h-20 w-20 mx-auto mb-2 rounded-full bg-warning/20 border-4 border-warning/50 flex items-center justify-center text-2xl font-bold text-warning group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(245,158,11,0.3)]">
                           {topThree[0].name?.[0] || topThree[0].username?.[0] || "?"}
                         </div>
                         <p className="font-bold text-lg text-warning">{topThree[0].username}</p>
                         <Badge className="bg-warning text-warning-foreground mt-1">{topThree[0].weekly_points} pts</Badge>
+                        <div className="flex items-center justify-center gap-1.5 mt-2 flex-wrap">
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getCodeforcesRatingClass(topThree[0].codeforces_rating)}`}>
+                            CF {topThree[0].codeforces_rating || 0}
+                          </Badge>
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getAtCoderRatingClass(topThree[0].atcoder_rating)}`}>
+                            AC {topThree[0].atcoder_rating || 0}
+                          </Badge>
+                        </div>
                       </Link>
                       <div className="w-full bg-warning/20 rounded-t-xl h-40 flex justify-center pt-4 relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-t from-warning/20 to-transparent" />
@@ -191,16 +208,24 @@ export default function Standing() {
                   {topThree[2] && (
                     <motion.div 
                       initial={{ opacity: 0, y: 50 }} 
-                      animate={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }} 
                       transition={{ delay: 0.3 }}
                       className="flex flex-col items-center w-full sm:w-1/3 order-3"
                     >
-                      <Link to={`/profile/${topThree[2].username}`} className="mb-4 text-center group">
+                      <Link to={`/profile/${topThree[2].username}`} className="mb-4 text-center group flex flex-col items-center">
                         <div className="h-16 w-16 mx-auto mb-2 rounded-full bg-orange-900/20 border-4 border-orange-700/50 flex items-center justify-center text-xl font-bold text-orange-600 group-hover:scale-110 transition-transform">
                           {topThree[2].name?.[0] || topThree[2].username?.[0] || "?"}
                         </div>
                         <p className="font-semibold">{topThree[2].username}</p>
                         <Badge variant="outline" className="text-orange-600 border-orange-600/30 mt-1">{topThree[2].weekly_points} pts</Badge>
+                        <div className="flex items-center justify-center gap-1.5 mt-2 flex-wrap">
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getCodeforcesRatingClass(topThree[2].codeforces_rating)}`}>
+                            CF {topThree[2].codeforces_rating || 0}
+                          </Badge>
+                          <Badge variant="outline" className={`font-mono text-xs px-2 py-0.5 ${getAtCoderRatingClass(topThree[2].atcoder_rating)}`}>
+                            AC {topThree[2].atcoder_rating || 0}
+                          </Badge>
+                        </div>
                       </Link>
                       <div className="w-full bg-orange-900/10 rounded-t-xl h-24 flex justify-center pt-4 relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-t from-orange-900/20 to-transparent" />
@@ -268,12 +293,12 @@ export default function Standing() {
                           </td>
                           <td className="px-6 py-4 font-mono font-medium">{user.weekly_points}</td>
                           <td className="px-6 py-4 hidden md:table-cell">
-                            <Badge variant="outline" className={user.codeforces_rating >= 1400 ? 'border-primary/50 text-primary bg-primary/10' : ''}>
+                            <Badge variant="outline" className={`font-mono ${getCodeforcesRatingClass(user.codeforces_rating)}`}>
                               {user.codeforces_rating || 0}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 hidden md:table-cell">
-                            <Badge variant="outline" className={user.atcoder_rating >= 400 ? 'border-success/50 text-success bg-success/10' : ''}>
+                            <Badge variant="outline" className={`font-mono ${getAtCoderRatingClass(user.atcoder_rating)}`}>
                               {user.atcoder_rating || 0}
                             </Badge>
                           </td>

@@ -109,7 +109,6 @@ async def update_user_info(
     db: Session = Depends(get_db), 
     current_user=Depends(get_current_user)
 ):
-    from app.schemas.participant import ParticipantUpdate
     participant = ParticipantRepository(db).get_participant_by_username(current_user.username)
     if not participant:
         raise HTTPException(status_code=404, detail="User not found")

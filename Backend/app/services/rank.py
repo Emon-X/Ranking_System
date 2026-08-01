@@ -185,12 +185,12 @@ async def _atcoder_get(url: str, params: dict | None = None) -> httpx.Response |
     return None
 
 
-async def fetch_atcoder_solved_count(handle: str) -> int:
+async def fetch_atcoder_solved_count(handle: str, days: int = 30) -> int:
     handle = _normalize_handle(handle)
     if not handle:
         return 0
 
-    cutoff_timestamp = _utc_cutoff_timestamp()
+    cutoff_timestamp = _utc_cutoff_timestamp(days=days)
     params = {
         "user": handle,
         "from_second": cutoff_timestamp,

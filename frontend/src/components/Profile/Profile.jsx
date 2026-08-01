@@ -8,6 +8,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Skeleton } from "../ui/skeleton";
+import { getCodeforcesRatingClass, getAtCoderRatingClass } from "../../lib/ratingColors";
 const API = API_BASE_URL;
 
 export default function Profile() {
@@ -283,11 +284,11 @@ export default function Profile() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Codeforces Rating</span>
-                  <Badge variant="outline" className="font-mono text-sm">{user.codeforces_rating || 0}</Badge>
+                  <Badge variant="outline" className={`font-mono text-sm ${getCodeforcesRatingClass(user.codeforces_rating)}`}>{user.codeforces_rating || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">AtCoder Rating</span>
-                  <Badge variant="outline" className="font-mono text-sm">{user.atcoder_rating || 0}</Badge>
+                  <Badge variant="outline" className={`font-mono text-sm ${getAtCoderRatingClass(user.atcoder_rating)}`}>{user.atcoder_rating || 0}</Badge>
                 </div>
               </CardContent>
             </Card>
