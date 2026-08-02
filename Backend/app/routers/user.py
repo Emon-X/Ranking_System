@@ -28,6 +28,9 @@ def run_standings_update_task(refresh: bool):
     
     asyncio.run(_async_task())
 
+from datetime import datetime, timedelta
+from app.repositories.contest import ContestRepository
+
 @router.get("/ViewAllUsers_by_Rank", response_model=ParticipantWeeklyPointsListResponse)
 async def view_all_users_by_rank(
     background_tasks: BackgroundTasks,
@@ -40,7 +43,19 @@ async def view_all_users_by_rank(
     
     participants = ParticipantRepository(db).get_all_participants()
 
+    contests = ContestRepository(db).get_all()
+    now = datetime.utcnow()
+    passed_contests_count = 0
+    for c in contests:
+        if not c.scheduled_at:
+            passed_contests_count += 1
+        else:
+            end_time = c.scheduled_at + timedelta(seconds=c.duration_seconds or 7200)
+            if now >= end_time or c.processed:
+                passed_contests_count += 1
+
     return ParticipantWeeklyPointsListResponse(
+        current_week=passed_contests_count,
         participants=[
             ParticipantWeeklyPointsResponse(
                 participant_id=participant.id,

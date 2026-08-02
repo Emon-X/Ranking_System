@@ -11,15 +11,17 @@ import Contest from './components/Contest/Contest.jsx'
 import AdminDashboard from './components/Admin/AdminDashboard.jsx'
 import Profile from './components/Profile/Profile.jsx'
 
+import { checkAuthStatus } from './lib/api.js'
+
 const ProtectedRoute = ({ children }) => {
-  if (!localStorage.getItem('isAuthenticated')) {
+  if (!checkAuthStatus()) {
     return <Navigate to="/login" replace />;
   }
   return children;
 };
 
 const AdminRoute = ({ children }) => {
-  if (!localStorage.getItem('isAuthenticated')) {
+  if (!checkAuthStatus()) {
     return <Navigate to="/login" replace />;
   }
   if (localStorage.getItem('userRole') !== 'admin') {

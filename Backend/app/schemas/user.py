@@ -28,3 +28,4 @@ class ParticipantWeeklyPointsResponse(ParticipantSolvedCountResponse):
 
 class ParticipantWeeklyPointsListResponse(BaseModel):
 	participants: list[ParticipantWeeklyPointsResponse]
+	current_week: int = 0

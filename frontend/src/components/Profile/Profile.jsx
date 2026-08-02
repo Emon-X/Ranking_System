@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Edit3, ExternalLink, Activity, Trophy, Code2, Target, BarChart3, TrendingUp } from "lucide-react";
 import { API_BASE_URL } from "../../config";
+import { apiFetch } from "../../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -27,9 +28,7 @@ export default function Profile() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API}/users/ViewUser/${targetUsername}`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-    })
+    apiFetch(`${API}/users/ViewUser/${targetUsername}`)
       .then(res => {
         if (!res.ok) throw new Error("User profile not found.");
         return res.json();
@@ -47,11 +46,10 @@ export default function Profile() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API}/${isAdminViewing ? 'admin/UpdateUser/' + user.username : 'users/UpdateUser'}`, {
+      const res = await apiFetch(`${API}/${isAdminViewing ? 'admin/UpdateUser/' + user.username : 'users/UpdateUser'}`, {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(editForm),
       });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../config';
+import { apiFetch } from '../../lib/api';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, ExternalLink, Activity, Trophy, PlayCircle } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
@@ -33,9 +34,7 @@ export default function Contest() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`${API}/contests/list`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-    })
+    apiFetch(`${API}/contests/list`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserPlus, PlusCircle, DownloadCloud, Trash2, Edit, Search, AlertTriangle, ChevronRight, Code2, Activity } from "lucide-react";
 import { API_BASE_URL } from '../../config';
+import { apiFetch } from '../../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -52,9 +53,8 @@ function UsersSection({ users, onRefresh }) {
   const handleDelete = async (username) => {
     setDeleting(username);
     try {
-      const res = await fetch(`${API}/admin/DeleteUser/${username}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+      const res = await apiFetch(`${API}/admin/DeleteUser/${username}`, {
+        method: "DELETE"
       });
       if (!res.ok) throw new Error("Failed to delete");
       showToast(`${username} removed.`);
@@ -220,8 +220,8 @@ function AddContestSection() {
         scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
         duration_seconds: Math.round(parseFloat(form.duration_hours || 2) * 3600), is_rated: true,
       };
-      const res = await fetch(`${API}/contests/add`, {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+      const res = await apiFetch(`${API}/contests/add`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -282,8 +282,8 @@ function ScrapeContestSection() {
     setStatus("loading"); setError(""); setResults(null);
     const urlList = urls.split("\n").map(u => u.trim()).filter(Boolean);
     try {
-      const res = await fetch(`${API}/contests/scrape`, {
-        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+      const res = await apiFetch(`${API}/contests/scrape`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ urls: urlList }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "Scrape failed."); }
@@ -364,7 +364,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/admin/ViewAllUsers`, { headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } });
+      const res = await apiFetch(`${API}/admin/ViewAllUsers`);
       const data = await res.json();
       setUsers(data.participants || []);
     } catch { setUsers([]); } finally { setLoading(false); }

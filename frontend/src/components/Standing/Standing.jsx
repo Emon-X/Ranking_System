@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Trophy, Medal, Crown, TrendingUp, Users, Activity, Download } from 'lucide-react';
 import { API_BASE_URL } from '../../config';
+import { apiFetch } from '../../lib/api';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -11,21 +12,23 @@ import { Button } from '../ui/button';
 import { getCodeforcesRatingClass, getAtCoderRatingClass } from '../../lib/ratingColors';
 export default function Standing() {
   const [userData, setUserData] = useState([]);
+  const [currentWeek, setCurrentWeek] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchStandings = () => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/users/ViewAllUsers_by_Rank`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-    })
+    apiFetch(`${API_BASE_URL}/users/ViewAllUsers_by_Rank`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
         return res.json();
       })
       .then((data) => {
         setUserData(data.participants || []);
+        if (data.current_week !== undefined) {
+          setCurrentWeek(data.current_week);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -110,7 +113,7 @@ export default function Standing() {
                 <div className="p-2 bg-secondary rounded-lg text-secondary-foreground"><Activity size={24}/></div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Current Week</p>
-                  <p className="text-2xl font-bold">Week 1</p>
+                  <p className="text-2xl font-bold">Week {currentWeek}</p>
                 </div>
               </CardContent>
             </Card>

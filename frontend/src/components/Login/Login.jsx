@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Lock, User, Mail, Code, Terminal, Layers } from "lucide-react";
 import { API_BASE_URL } from "../../config";
+import { checkAuthStatus } from "../../lib/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -52,6 +53,12 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (checkAuthStatus()) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

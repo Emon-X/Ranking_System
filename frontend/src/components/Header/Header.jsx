@@ -4,6 +4,7 @@ import { Search, Menu, X, Trophy, Swords, User, BookOpen, ShieldCheck, LogOut, B
 import { ThemeToggle } from "../ThemeToggle";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { clearAuthSession } from "../../lib/api";
 
 const isAdmin = () => localStorage.getItem('userRole') === 'admin';
 
@@ -20,7 +21,7 @@ export default function Header() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+    clearAuthSession();
     window.location.href = '/login';
   };
 
